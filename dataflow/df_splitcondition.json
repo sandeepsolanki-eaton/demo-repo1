@@ -1,0 +1,95 @@
+{
+	"name": "df_splitcondition",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "ds_InputMovies",
+						"type": "DatasetReference"
+					},
+					"name": "srcMovies"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_Output2",
+						"type": "DatasetReference"
+					},
+					"name": "DramaMovies",
+					"rejectedDataLinkedService": {
+						"referenceName": "synapse-ws84-WorkspaceDefaultStorage",
+						"type": "LinkedServiceReference"
+					}
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_Output2",
+						"type": "DatasetReference"
+					},
+					"name": "RomanticMovies",
+					"rejectedDataLinkedService": {
+						"referenceName": "synapse-ws84-WorkspaceDefaultStorage",
+						"type": "LinkedServiceReference"
+					}
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_Output2",
+						"type": "DatasetReference"
+					},
+					"name": "OtherMovies"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SplitbyMovieType"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          MovieID as string,",
+				"          Title as string,",
+				"          Type as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     partitionBy('hash', 1)) ~> srcMovies",
+				"srcMovies split(equals(Type,'Drama'),",
+				"     equals(Type,'Romantic'),",
+				"     disjoint: false,",
+				"     partitionBy('hash', 1)) ~> SplitbyMovieType@(Drama, Romantic, AllOthers)",
+				"SplitbyMovieType@Drama sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['MovieTypeDrama.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> DramaMovies",
+				"SplitbyMovieType@Romantic sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['MovieTypeRomantic.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> RomanticMovies",
+				"SplitbyMovieType@AllOthers sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['MovieTypeAllOthers.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> OtherMovies"
+			]
+		}
+	}
+}

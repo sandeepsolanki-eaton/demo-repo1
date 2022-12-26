@@ -1,0 +1,37 @@
+{
+	"name": "SplitDataflow",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF_SplitMoviesbyType",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "df_splitcondition",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "None",
+					"cacheSinks": {
+						"firstRowOnly": true
+					}
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2022-12-20T14:34:16Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}
