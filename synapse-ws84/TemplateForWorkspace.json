@@ -34,6 +34,57 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('workspaceName'), '/Assert_df')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "df_Assert",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"EmployeeInfo": {},
+									"Department": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "None",
+							"cacheSinks": {
+								"firstRowOnly": true
+							}
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/dataflows/df_Assert')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/ForEach')]",
 			"type": "Microsoft.Synapse/workspaces/pipelines",
 			"apiVersion": "2019-06-01-preview",
@@ -701,6 +752,44 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/ds_Dept')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "Dept.csv",
+						"folderPath": "Input",
+						"fileSystem": "asa-filesystem"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Deptid",
+						"type": "String"
+					},
+					{
+						"name": "DeptName",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/AzureDataLakeStorage1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/ds_EmpGender')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -744,6 +833,56 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/synapse-ws84-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/ds_EmployeeInfo')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureDataLakeStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "EmployeeInfo.csv",
+						"folderPath": "Input",
+						"fileSystem": "asa-filesystem"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Empid",
+						"type": "String"
+					},
+					{
+						"name": "First Name",
+						"type": "String"
+					},
+					{
+						"name": "Last Name",
+						"type": "String"
+					},
+					{
+						"name": "DOJ",
+						"type": "String"
+					},
+					{
+						"name": "Department",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/AzureDataLakeStorage1')]"
 			]
 		},
 		{
@@ -1245,6 +1384,94 @@
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/ds_InputMovies')]",
+				"[concat(variables('workspaceId'), '/datasets/ds_Output2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/df_Assert')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "ds_EmployeeInfo",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeInfo"
+						},
+						{
+							"dataset": {
+								"referenceName": "ds_Dept",
+								"type": "DatasetReference"
+							},
+							"name": "Department"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ds_Output2",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AssertDQ"
+						},
+						{
+							"name": "ErrorFieldFlag"
+						},
+						{
+							"name": "filterErrorRecords"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Empid as string,",
+						"          {First Name} as string,",
+						"          {Last Name} as string,",
+						"          DOJ as string,",
+						"          Department as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     partitionBy('hash', 1)) ~> EmployeeInfo",
+						"source(output(",
+						"          Deptid as string,",
+						"          DeptName as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     partitionBy('hash', 1)) ~> Department",
+						"EmployeeInfo, Department assert(expectTrue(isDate(DOJ, 'yyyyMMdd'), false, 'assertDOJ', null, 'Check date of join is in date format'),",
+						"     expectUnique(Empid, false, 'assertEmpId', null, 'Check Empid is unique'),",
+						"     expectExists(Deptid == Department, false, 'assertDeptId', null, 'Check Departid exist in department dataset')) ~> AssertDQ",
+						"AssertDQ derive(ErrorFieldFlag = iif(isError(),'Y','N'),",
+						"     partitionBy('hash', 1)) ~> ErrorFieldFlag",
+						"ErrorFieldFlag filter(ErrorFieldFlag=='N',",
+						"     partitionBy('hash', 1)) ~> filterErrorRecords",
+						"filterErrorRecords sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     partitionFileNames:['EmployeeInfo.csv'],",
+						"     umask: 0022,",
+						"     preCommands: [],",
+						"     postCommands: [],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/ds_EmployeeInfo')]",
+				"[concat(variables('workspaceId'), '/datasets/ds_Dept')]",
 				"[concat(variables('workspaceId'), '/datasets/ds_Output2')]"
 			]
 		},
