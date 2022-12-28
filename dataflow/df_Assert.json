@@ -10,12 +10,33 @@
 						"type": "DatasetReference"
 					},
 					"name": "EmployeeInfo"
+				},
+				{
+					"dataset": {
+						"referenceName": "ds_Dept",
+						"type": "DatasetReference"
+					},
+					"name": "Department"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "ds_Output",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
 			"transformations": [
 				{
 					"name": "AssertDQ"
+				},
+				{
+					"name": "ErrorFieldFlag"
+				},
+				{
+					"name": "filterErrorRecords"
 				}
 			],
 			"scriptLines": [
@@ -30,8 +51,30 @@
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
 				"     partitionBy('hash', 1)) ~> EmployeeInfo",
-				"EmployeeInfo assert(expectTrue(isDate(DOJ, 'yyyyMMdd'), false, 'assertDOJ', null, 'Check date of join is in date format'),",
-				"     expectUnique(Empid, false, 'assertEmpId', null, 'Check Empid is unique')) ~> AssertDQ"
+				"source(output(",
+				"          Deptid as string,",
+				"          DeptName as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     partitionBy('hash', 1)) ~> Department",
+				"EmployeeInfo, Department assert(expectTrue(isDate(DOJ, 'yyyyMMdd'), false, 'assertDOJ', null, 'Check date of join is in date format'),",
+				"     expectUnique(Empid, false, 'assertEmpId', null, 'Check Empid is unique'),",
+				"     expectExists(Deptid == Department, false, 'assertDeptId', null, 'Check Departid exist in department dataset')) ~> AssertDQ",
+				"AssertDQ derive(ErrorFieldFlag = iif(isError(),'Y','N'),",
+				"     partitionBy('hash', 1)) ~> ErrorFieldFlag",
+				"ErrorFieldFlag filter(ErrorFieldFlag=='N',",
+				"     partitionBy('hash', 1)) ~> filterErrorRecords",
+				"filterErrorRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['EmployeeInfo.csv'],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
 			]
 		}
 	}
