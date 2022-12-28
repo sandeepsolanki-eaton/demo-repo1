@@ -1,0 +1,39 @@
+{
+	"name": "df_Assert",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"linkedService": {
+						"referenceName": "synapse-ws84-WorkspaceDefaultStorage",
+						"type": "LinkedServiceReference"
+					},
+					"name": "EmployeeInfo"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "AssertDQ"
+				}
+			],
+			"scriptLines": [
+				"source(useSchema: false,",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'delimited',",
+				"     fileSystem: 'asa-filesystem',",
+				"     folderPath: 'Input',",
+				"     fileName: 'EmployeeInfo.csv',",
+				"     columnDelimiter: ',',",
+				"     escapeChar: '\\\\',",
+				"     quoteChar: '\\\"',",
+				"     columnNamesAsHeader: true,",
+				"     partitionBy('hash', 1)) ~> EmployeeInfo",
+				"EmployeeInfo assert(expectTrue(ERROR_FUNCTION(''), false, 'assertDOJ', null, 'Check date of join is in date format')) ~> AssertDQ"
+			]
+		}
+	}
+}
