@@ -5,9 +5,9 @@
 		"typeProperties": {
 			"sources": [
 				{
-					"linkedService": {
-						"referenceName": "synapse-ws84-WorkspaceDefaultStorage",
-						"type": "LinkedServiceReference"
+					"dataset": {
+						"referenceName": "ds_EmployeeInfo",
+						"type": "DatasetReference"
 					},
 					"name": "EmployeeInfo"
 				}
@@ -19,20 +19,19 @@
 				}
 			],
 			"scriptLines": [
-				"source(useSchema: false,",
+				"source(output(",
+				"          Empid as string,",
+				"          {First Name} as string,",
+				"          {Last Name} as string,",
+				"          DOJ as string,",
+				"          Department as string",
+				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     ignoreNoFilesFound: false,",
-				"     format: 'delimited',",
-				"     fileSystem: 'asa-filesystem',",
-				"     folderPath: 'Input',",
-				"     fileName: 'EmployeeInfo.csv',",
-				"     columnDelimiter: ',',",
-				"     escapeChar: '\\\\',",
-				"     quoteChar: '\\\"',",
-				"     columnNamesAsHeader: true,",
 				"     partitionBy('hash', 1)) ~> EmployeeInfo",
-				"EmployeeInfo assert(expectTrue(ERROR_FUNCTION(''), false, 'assertDOJ', null, 'Check date of join is in date format')) ~> AssertDQ"
+				"EmployeeInfo assert(expectTrue(isDate(DOJ, 'yyyyMMdd'), false, 'assertDOJ', null, 'Check date of join is in date format'),",
+				"     expectUnique(Empid, false, 'assertEmpId', null, 'Check Empid is unique')) ~> AssertDQ"
 			]
 		}
 	}
